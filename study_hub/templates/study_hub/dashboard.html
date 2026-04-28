@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Center - Self-Study Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .progress-thick { height: 12px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+    <!-- Mobile Header -->
+    <div class="lg:hidden bg-slate-900 text-white p-4 flex justify-between items-center z-50 sticky top-0 shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center font-bold text-sm">
+                {{ user.username|first|upper }}
+            </div>
+            <span class="font-bold tracking-tight">NexusPortal</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="toggleMobileSidebar('left')" class="p-2 bg-slate-800 rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </button>
+            <button onclick="toggleMobileSidebar('right')" class="p-2 bg-slate-800 rounded-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden relative">
+        
+        <!-- Sidebar (Left) - Hidden on mobile, animated on click -->
+        <aside id="sidebar-left" class="fixed inset-y-0 left-0 z-40 w-80 bg-slate-900 text-white flex flex-col border-r border-slate-800 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
+            <!-- User Profile -->
+            <div class="p-8 border-b border-slate-800">
+                <div class="flex items-center space-x-4 mb-6">
+                    <div class="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center font-bold text-xl">
+                        {{ user.username|first|upper }}
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-lg leading-tight">{{ user.username }}</h2>
+                        <p class="text-slate-400 text-xs">Senior Scholar</p>
+                    </div>
+                </div>
+                
+                <!-- Digital Clock -->
+                <div class="bg-slate-800/50 rounded-2xl p-4 text-center border border-slate-700">
+                    <p class="text-slate-500 text-[10px] uppercase tracking-widest font-bold mb-1">Current Time</p>
+                    <div id="digital-clock" class="text-3xl font-mono font-medium text-indigo-400">00:00:00</div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="px-6 space-y-1">
+                <button onclick="switchView('dashboard')" id="btn-nav-dashboard" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-indigo-600 text-white font-bold transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                    <span>Command Center</span>
+                </button>
+                <button onclick="switchView('resources')" id="btn-nav-resources" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    <span>Resources</span>
+                </button>
+            </div>
+
+            <!-- Pomodoro Timer (Restored to Sidebar) -->
+            <div class="px-6 py-4 flex-1 space-y-4">
+                <div class="bg-indigo-600 rounded-2xl p-5 text-white shadow-xl shadow-indigo-100 relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-[10px] font-bold uppercase tracking-widest opacity-80">Focus Timer</span>
+                            <select id="timer-mode" onchange="switchTimerMode()" class="bg-indigo-500 text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded border-none focus:ring-0 cursor-pointer">
+                                <option value="25">Pomodoro</option>
+                                <option value="50">Deep Work</option>
+                                <option value="90">Extreme</option>
+                            </select>
+                        </div>
+                        <div id="timer-display" class="text-4xl font-black mb-5 tracking-tighter text-center">25:00</div>
+                        <div class="flex space-x-2">
+                            <button onclick="startTimer()" id="timer-btn" class="flex-1 bg-white text-indigo-600 py-2 rounded-lg text-sm font-bold hover:bg-indigo-50 transition-all">Start</button>
+                            <button onclick="resetTimer()" class="p-2 bg-indigo-500 rounded-lg font-bold hover:bg-indigo-400 transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logout -->
+            <div class="p-8 border-t border-slate-800">
+                <form action="{% url 'logout' %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="flex items-center space-x-3 text-slate-400 hover:text-red-400 transition-colors w-full group">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                        <span class="font-medium">Sign Out</span>
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <!-- Main Feed (Center) -->
+        <main class="flex-1 overflow-y-auto bg-slate-50 p-6 lg:p-12 transition-all duration-500">
+            <div class="max-w-4xl mx-auto">
+                <!-- VIEW: DASHBOARD (Home) -->
+                <div id="view-dashboard" class="space-y-8 lg:space-y-12">
+                    <header class="mb-8 lg:mb-12">
+                        <div class="flex flex-col lg:flex-row lg:justify-between lg:items-end gap-6">
+                            <div>
+                                <h1 class="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">Command Center</h1>
+                                <p class="text-slate-500 mt-2 font-medium">Total Focus Time: <span class="text-indigo-600">{{ total_study_time }} minutes</span></p>
+                            </div>
+                            <button onclick="document.getElementById('course-modal').classList.remove('hidden')" class="w-full lg:w-auto px-6 py-3 bg-white border-2 border-slate-100 rounded-2xl font-bold text-slate-600 hover:border-indigo-600 hover:text-indigo-600 transition-all flex items-center justify-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                <span>New Path</span>
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- Focus Feed Section -->
+                    <section id="section-focus" class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-lg lg:text-xl font-bold text-slate-800">Course Progress</h2>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+                            {% for course in courses %}
+                            <div class="bg-white rounded-3xl p-6 lg:p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-all group">
+                                <div class="flex justify-between items-start mb-6">
+                                    <div class="max-w-[70%]">
+                                        <h3 class="font-bold text-lg lg:text-xl text-slate-900 truncate">{{ course.name }}</h3>
+                                        <p class="text-slate-400 text-xs lg:text-sm" id="units-{{ course.id }}">{{ course.completed_units }} / {{ course.total_units }} units</p>
+                                    </div>
+                                    <button onclick="updateProgress({{ course.id }})" class="w-10 h-10 bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white rounded-xl flex items-center justify-center transition-all text-slate-400 shrink-0">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                    </button>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center text-xs lg:text-sm">
+                                        <span class="font-bold text-slate-500 uppercase tracking-widest text-[9px]">Progress</span>
+                                        <span class="font-mono font-bold" id="progress-text-{{ course.id }}">{{ course.progress_percentage|floatformat:0 }}%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 rounded-full progress-thick overflow-hidden">
+                                        <div id="progress-bar-{{ course.id }}" class="h-full rounded-full transition-all duration-700 {% if course.progress_percentage < 50 %}bg-blue-500{% elif course.progress_percentage < 100 %}bg-orange-500{% else %}bg-green-500{% endif %}" style="width: {{ course.progress_percentage }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+                </div>
+
+                <!-- VIEW: RESOURCES -->
+                <div id="view-resources" class="hidden space-y-12">
+                    <header class="mb-12 flex flex-col lg:flex-row justify-between items-start gap-4">
+                        <div>
+                            <h1 class="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">Resource Library</h1>
+                            <p class="text-slate-500 mt-2 font-medium text-sm lg:text-base">All your study materials in one place.</p>
+                        </div>
+                        <button onclick="switchView('dashboard')" class="w-full lg:w-auto px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-indigo-600 hover:text-indigo-600 transition-all flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                            <span>Back to Dashboard</span>
+                        </button>
+                    </header>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+                        {% for doc in documents %}
+                        <div class="bg-white p-5 lg:p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                            <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            </div>
+                            <h4 class="font-bold text-slate-900 truncate mb-1">{{ doc.title }}</h4>
+                            <p class="text-slate-400 text-xs mb-4">{{ doc.course.name }}</p>
+                            <button onclick="openReview({{ doc.id }}, '{{ doc.file.url }}')" class="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold">Review Now</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                    </div>
+
+                    <!-- Recent Resources (Integrated) -->
+                    <section class="mt-12">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Recent Resources</h3>
+                            <button onclick="switchView('resources')" class="text-xs font-bold text-indigo-600 hover:text-indigo-700">View Library &rarr;</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {% for doc in documents|slice:":8" %}
+                            <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-200 transition-all group">
+                                <div class="flex items-center space-x-3 mb-4">
+                                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    </div>
+                                    <div class="truncate">
+                                        <p class="text-sm font-bold text-slate-900 truncate">{{ doc.title }}</p>
+                                        <p class="text-[10px] text-slate-400 font-medium">{{ doc.course.name }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between pt-3 border-t border-slate-50">
+                                    <button onclick="openReview({{ doc.id }}, '{{ doc.file.url }}')" class="text-xs font-bold text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-all">Review</button>
+                                    <a href="{{ doc.file.url }}" class="p-1.5 text-slate-300 hover:text-indigo-600" download>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            <!-- Quick Upload Card -->
+                            <button onclick="document.getElementById('upload-modal').classList.remove('hidden')" class="border-2 border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center text-slate-400 hover:border-indigo-400 hover:text-indigo-500 transition-all group">
+                                <svg class="w-6 h-6 mb-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                <span class="text-xs font-bold uppercase tracking-widest">New Resource</span>
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+
+        <!-- Floating To-Do Widget (Bottom Right Corner) -->
+        <div class="fixed bottom-8 right-8 z-50 flex flex-col items-end">
+            <!-- To-Do Panel -->
+            <div id="todo-panel" class="hidden w-80 lg:w-96 bg-white rounded-3xl shadow-2xl border border-slate-100 flex flex-col mb-4 overflow-hidden animate-slide-up">
+                <div class="p-6 bg-indigo-600 text-white flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold">Today's Focus</h3>
+                        <p class="text-[10px] opacity-80">{{ today_tasks|length }} objectives pending</p>
+                    </div>
+                    <button onclick="toggleTodoWidget()" class="p-2 hover:bg-indigo-500 rounded-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <div class="p-6 max-h-[400px] overflow-y-auto space-y-4">
+                    <form action="{% url 'add_task' %}" method="POST" class="flex space-x-2">
+                        {% csrf_token %}
+                        <input type="text" name="task_description" placeholder="New objective..." required class="flex-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 placeholder-slate-300">
+                        <select name="priority" class="bg-slate-50 border-none rounded-xl text-xs font-bold px-2">
+                            <option value="H">H</option>
+                            <option value="M" selected>M</option>
+                            <option value="L">L</option>
+                        </select>
+                        <button type="submit" class="p-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                        </button>
+                    </form>
+
+                    <div class="space-y-2">
+                        {% for task in today_tasks %}
+                        <div id="task-item-{{ task.id }}" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl group border border-transparent hover:border-indigo-100 transition-all">
+                            <div class="flex items-center space-x-3 overflow-hidden">
+                                <input type="checkbox" {% if task.is_done %}checked{% endif %} onclick="toggleTask({{ task.id }})" class="w-5 h-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                <div class="truncate">
+                                    <p id="task-text-{{ task.id }}" class="text-sm font-bold text-slate-700 truncate {% if task.is_done %}line-through text-slate-400{% endif %}">{{ task.task_description }}</p>
+                                    {% if task.priority == 'H' %}<span class="text-[9px] font-black text-rose-500 uppercase">High</span>{% endif %}
+                                </div>
+                            </div>
+                            <button onclick="deleteTask({{ task.id }})" class="p-2 text-slate-300 hover:text-rose-500 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Toggle Button -->
+            <button onclick="toggleTodoWidget()" class="w-16 h-16 bg-indigo-600 text-white rounded-2xl shadow-2xl shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 transition-all active:scale-95 group">
+                <svg id="todo-icon" class="w-8 h-8 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">Upload Document</h2>
+            <form action="{% url 'upload_doc' %}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                {% csrf_token %}
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Select Course</label>
+                    {{ upload_form.course }}
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Document Title</label>
+                    {{ upload_form.title }}
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Select File</label>
+                    <div class="p-4 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50">
+                        {{ upload_form.file }}
+                    </div>
+                </div>
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" onclick="document.getElementById('upload-modal').classList.add('hidden')" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Course Modal -->
+    <div id="course-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">Create New Course</h2>
+            <form action="{% url 'add_course' %}" method="POST" class="space-y-4">
+                {% csrf_token %}
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Course Name</label>
+                    <input type="text" name="name" required placeholder="e.g. Django Mastery" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Units</label>
+                    <input type="number" name="total_units" value="10" required class="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" onclick="document.getElementById('course-modal').classList.add('hidden')" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100">Create Path</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- PDF Review Modal (Split Screen) -->
+    <div id="review-modal" class="hidden fixed inset-0 bg-slate-900 z-[60] flex flex-col">
+        <header class="bg-slate-800 p-4 flex justify-between items-center border-b border-slate-700">
+            <div class="flex items-center space-x-4">
+                <button onclick="closeReview()" class="p-2 hover:bg-slate-700 rounded-lg text-slate-400 transition-all flex items-center gap-2 group">
+                    <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                    <span class="text-xs font-bold uppercase tracking-widest hidden md:inline">Back to Dashboard</span>
+                </button>
+                <div class="h-6 w-[1px] bg-slate-700"></div>
+                <h2 id="review-title" class="text-white font-bold truncate max-w-xl">Document Review</h2>
+            </div>
+            <button onclick="closeReview()" class="text-slate-400 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </header>
+        <div class="flex-1 flex overflow-hidden">
+            <!-- Left: Document Viewer -->
+            <div id="viewer-container" class="flex-1 bg-slate-700 relative overflow-hidden">
+                <div id="viewer-placeholder" class="absolute inset-0 flex items-center justify-center text-slate-500 z-0">
+                    <p>Loading document...</p>
+                </div>
+            </div>
+            <!-- Right: Review Pane -->
+            <div class="w-[450px] bg-white flex flex-col border-l border-slate-200">
+                <div class="p-8 flex-1 overflow-y-auto space-y-8">
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Key Takeaways</h3>
+                        <textarea id="takeaways-input" class="w-full h-64 p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 placeholder-slate-300" placeholder="Enter your notes here..."></textarea>
+                        <button onclick="saveReview()" class="w-full mt-4 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">Save Notes</button>
+                    </div>
+                    
+                    <div class="pt-8 border-t border-slate-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">AI Insight Summary</h3>
+                            <span class="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded">Beta</span>
+                        </div>
+                        <div id="ai-summary-box" class="p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 min-h-[100px] text-sm text-slate-500 italic">
+                            Summary will appear here after generation...
+                        </div>
+                        <button onclick="generateAISummary()" class="w-full mt-4 py-3 border-2 border-indigo-100 text-indigo-600 rounded-xl font-bold hover:bg-indigo-50 transition-all">
+                            Generate Summary
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CSRF Helper
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        // Digital Clock
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('digital-clock').innerText = timeStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- Pomodoro & Time Management ---
+        let timerSeconds = 1500; // default 25m
+        let timerInterval = null;
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerSeconds / 60);
+            const secs = timerSeconds % 60;
+            document.getElementById('timer-display').innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function switchTimerMode() {
+            const mins = parseInt(document.getElementById('timer-mode').value);
+            timerSeconds = mins * 60;
+            updateTimerDisplay();
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                document.getElementById('timer-btn').innerText = 'Start';
+            }
+        }
+
+        function startTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                document.getElementById('timer-btn').innerText = 'Start';
+            } else {
+                document.getElementById('timer-btn').innerText = 'Pause';
+                timerInterval = setInterval(() => {
+                    timerSeconds--;
+                    updateTimerDisplay();
+                    if (timerSeconds <= 0) {
+                        clearInterval(timerInterval);
+                        alert('Time is up! Deep Work session complete.');
+                        logStudySession(document.getElementById('timer-mode').value);
+                        resetTimer();
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            const mins = parseInt(document.getElementById('timer-mode').value);
+            timerSeconds = mins * 60;
+            updateTimerDisplay();
+            document.getElementById('timer-btn').innerText = 'Start';
+        }
+
+        async function logStudySession(duration) {
+            const formData = new FormData();
+            formData.append('duration', duration);
+            await fetch('/study-stat/', { method: 'POST', headers: { 'X-CSRFToken': csrftoken }, body: formData });
+        }
+
+        // AJAX Logic for Progress & Tasks
+        async function updateProgress(courseId) {
+            const bar = document.getElementById(`progress-bar-${courseId}`);
+            const text = document.getElementById(`progress-text-${courseId}`);
+            const units = document.getElementById(`units-${courseId}`);
+            
+            try {
+                const res = await fetch(`/update-progress/${courseId}/`, { method: 'POST', headers: { 'X-CSRFToken': csrftoken } });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    bar.style.width = `${data.progress}%`;
+                    text.innerText = `${Math.round(data.progress)}%`;
+                    units.innerText = `${data.completed_units} / ${units.innerText.split('/')[1]}`;
+                    
+                    // Dynamic Colors
+                    bar.classList.remove('bg-blue-500', 'bg-orange-500', 'bg-green-500');
+                    if (data.progress < 50) bar.classList.add('bg-blue-500');
+                    else if (data.progress < 100) bar.classList.add('bg-orange-500');
+                    else bar.classList.add('bg-green-500');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function toggleTask(id) {
+            const txt = document.getElementById(`task-text-${id}`);
+            try {
+                const res = await fetch(`/toggle-task/${id}/`, { method: 'POST', headers: { 'X-CSRFToken': csrftoken } });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    if (data.is_done) txt.classList.add('line-through', 'text-slate-400');
+                    else txt.classList.remove('line-through', 'text-slate-400');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // --- Navigation Logic (SPA) ---
+        function switchView(viewId) {
+            // Hide all views
+            document.getElementById('view-dashboard').classList.add('hidden');
+            document.getElementById('view-resources').classList.add('hidden');
+            
+            // Show target view
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            
+            // Update Sidebar Buttons
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'font-bold');
+                btn.classList.add('text-slate-400', 'hover:bg-slate-800/50', 'hover:text-white');
+            });
+            
+            const activeBtn = document.getElementById(`btn-nav-${viewId}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-indigo-600', 'text-white', 'font-bold');
+                activeBtn.classList.remove('text-slate-400', 'hover:bg-slate-800/50', 'hover:text-white');
+            }
+        }
+
+        // --- PDF Review Logic ---
+        let currentDocId = null;
+
+        async function openReview(id, url) {
+            currentDocId = id;
+            document.getElementById('review-modal').classList.remove('hidden');
+            
+            const container = document.getElementById('viewer-container');
+            
+            // File Type Detection
+            const lowerUrl = fileUrl.toLowerCase();
+            const isPDF = lowerUrl.endsWith('.pdf');
+            const isText = url.match(/\.(txt|md|py|js|css|json)$/i);
+            
+            let viewerHtml = '';
+            if (isPDF) {
+                // Direct PDF embed is most stable
+                viewerHtml = `<embed src="${url}#view=FitH&toolbar=1" type="application/pdf" width="100%" height="100%" style="height: 100%; width: 100%;">`;
+            } else if (isOffice) {
+                const absoluteUrl = window.location.origin + url;
+                const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(absoluteUrl)}&embedded=true`;
+                viewerHtml = `<iframe src="${viewerUrl}" style="width:100%; height:100%; border:none;"></iframe>`;
+            } else if (isImage) {
+                viewerHtml = `<div class="flex items-center justify-center h-full bg-slate-800 p-4"><img src="${url}" class="max-w-full max-h-full object-contain shadow-2xl"></div>`;
+            } else if (isText) {
+                try {
+                    const textRes = await fetch(url);
+                    const content = await textRes.text();
+                    viewerHtml = `<div class="h-full bg-slate-900 p-8 overflow-y-auto font-mono text-emerald-400 text-sm whitespace-pre-wrap">${content}</div>`;
+                } catch(e) { viewerHtml = `<p class="text-white p-8">Failed to load content.</p>`; }
+            } else {
+                viewerHtml = `<div class="flex items-center justify-center h-full text-white p-8 text-center bg-slate-800"><div><p class="mb-4">No preview available.</p><a href="${url}" class="px-6 py-2 bg-indigo-600 rounded-lg" download>Download File</a></div></div>`;
+            }
+
+            container.innerHTML = viewerHtml;
+            document.getElementById('review-modal').classList.remove('hidden');
+            
+            try {
+                const res = await fetch(`/review/get/${id}/`);
+                const data = await res.json();
+                document.getElementById('review-title').innerText = `Review: ${data.title}`;
+                document.getElementById('takeaways-input').value = data.takeaways;
+                document.getElementById('ai-summary-box').innerText = data.ai_summary || "Summary will appear here after generation...";
+            } catch (e) { console.error('Failed to load review', e); }
+        }
+
+        function closeReview() {
+            document.getElementById('review-modal').classList.add('hidden');
+            document.getElementById('viewer-container').innerHTML = '<div id="viewer-placeholder" class="absolute inset-0 flex items-center justify-center text-slate-500 z-0"><p>Loading document...</p></div>';
+            currentDocId = null;
+        }
+
+        async function saveReview() {
+            if (!currentDocId) return;
+            const takeaways = document.getElementById('takeaways-input').value;
+            
+            try {
+                const res = await fetch(`/review/save/${currentDocId}/`, {
+                    method: 'POST',
+                    headers: { 
+                        'X-CSRFToken': csrftoken,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `takeaways=${encodeURIComponent(takeaways)}`
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    alert('Notes saved successfully!');
+                }
+            } catch (e) { console.error('Failed to save notes', e); }
+        }
+
+        function generateAISummary() {
+            document.getElementById('ai-summary-box').innerText = "Analyzing document structure... identifying key concepts... (Simulating Gemini API)";
+            setTimeout(() => {
+                document.getElementById('ai-summary-box').innerText = "This document provides a comprehensive overview of the subject, focusing on core methodologies and practical implementation strategies. Key themes include efficiency optimization and modern architectural patterns.";
+            }, 2000);
+        }
+
+        async function deleteTask(id) {
+            if (!confirm('Are you sure you want to delete this task?')) return;
+            try {
+                const res = await fetch(`/delete-task/${id}/`, { method: 'POST', headers: { 'X-CSRFToken': csrftoken } });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    document.getElementById(`task-item-${id}`).remove();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function deleteDoc(id) {
+            if (!confirm('Delete this document? This cannot be undone.')) return;
+            try {
+                const res = await fetch(`/delete-doc/${id}/`, { method: 'POST', headers: { 'X-CSRFToken': csrftoken } });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    // Find the parent div of the doc-item and remove it
+                    const item = document.getElementById(`doc-item-${id}`);
+                    item.closest('.flex.items-center.justify-between.p-3').remove();
+                }
+            } catch (e) { console.error(e); }
+        }
+        // --- Responsive Mobile Sidebar Logic ---
+        function toggleMobileSidebar(side) {
+            const sidebar = document.getElementById(`sidebar-${side}`);
+            const isHidden = sidebar.classList.contains(side === 'left' ? '-translate-x-full' : 'translate-x-full');
+            
+            // Close other sidebar first
+            const otherSide = side === 'left' ? 'right' : 'left';
+            document.getElementById(`sidebar-${otherSide}`).classList.add(otherSide === 'left' ? '-translate-x-full' : 'translate-x-full');
+            
+            if (isHidden) {
+                sidebar.classList.remove(side === 'left' ? '-translate-x-full' : 'translate-x-full');
+            } else {
+                sidebar.classList.add(side === 'left' ? '-translate-x-full' : 'translate-x-full');
+            }
+        }
+
+        // Close sidebars on resize to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) {
+                document.getElementById('sidebar-left').classList.remove('-translate-x-full');
+                document.getElementById('sidebar-right').classList.remove('translate-x-full');
+            }
+        });
+
+        // Close sidebar when clicking main content on mobile
+        document.querySelector('main').addEventListener('click', () => {
+            if (window.innerWidth < 1024) {
+                document.getElementById('sidebar-left').classList.add('-translate-x-full');
+                document.getElementById('sidebar-right').classList.add('translate-x-full');
+            }
+        });
+
+        function toggleTodoWidget() {
+            const panel = document.getElementById('todo-panel');
+            const icon = document.getElementById('todo-icon');
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            } else {
+                panel.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
+        }
+    </script>
+
+    <style>
+        @keyframes slide-up {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slide-up 0.3s ease-out; }
+
+        /* Mobile Document Review Optimization */
+        @media (max-width: 1023px) {
+            #review-modal .flex-1.flex { flex-direction: column; }
+            #review-modal .w-\[450px\] { width: 100% !important; border-l: none; border-t: 1px solid #e2e8f0; height: 50vh; }
+            #viewer-container { height: 50vh; }
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+    </style>
+</body>
+</html>
